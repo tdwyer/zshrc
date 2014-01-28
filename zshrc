@@ -1,5 +1,5 @@
-source ~/.zprofile
 source /etc/zsh/zprofile
+source ~/.zprofile
 #
 ############################################################
 autoload -U colors
@@ -7,13 +7,13 @@ colors
 setopt PROMPT_SUBST
 ############################################################
 #
-if [[ $USER = hacker ]]; then
+if [[ $USER = user ]]; then
 	_USER_="%{$fg_no_bold[magenta]%}%n%{$reset_color%}"
 
-elif [[ $USER = systemdev ]]; then
+elif [[ $USER = devel ]]; then
 	_USER_="%{$fg_no_bold[green]%}%n%{$reset_color%}"
 
-elif [[ $USER = elevated ]]; then
+elif [[ $USER = admin ]]; then
 	_USER_="%{$fg_no_bold[yellow]%}%n%{$reset_color%}"
 
 elif [[ $USER = root ]]; then
@@ -39,15 +39,14 @@ _TTY_="%{$fg_bold[white]%}%l%{$reset_color%}"
 _DOT_="%{$fg_no_bold[yellow]%}_%{$reset_color%}"
 #
 #
-#If root Red>YLellow>White
-# else Blue>Cyan>White
+# If root Red>Yellow>White
+# else Blue>Light-blue>White
 _ROOT_CMD_="%{$fg_bold[red]%}>%{$fg_bold[yellow]%}>%{$fg_bold[white]%}>%{$reset_color%}"
 _USER_CMD_="%{$fg_no_bold[blue]%}>%{$fg_bold[blue]%}>%{$fg_bold[white]%}>%{$reset_color%}"
 #
 setopt extended_glob
 preexec () {
   if [[ "$TERM" == "screen-256color" ]] ;then
-    #echo -ne "\ek${1%% *}\e\\"
     local USR=$USERNAME[(w)1,1]:u
     local CMD=${1[(wr)^(*=*|sudo|-*)]}
     echo -ne "\ek${USR}_${CMD}\e\\"
@@ -90,8 +89,6 @@ setopt chase_links              # resolve symlinks
 setopt print_exit_value         # print return value if non-zero
 unsetopt rm_star_silent         # ask for confirmation for `rm *' or `rm path/*'
 #
-# abbiword auto suggest packages in repos
-#[ -r /etc/profile.d/cnf.sh ] && . /etc/profile.d/cnf.sh
 #
 local _myhosts
 if [[ -f $HOME/.ssh/known_hosts ]]; then
@@ -103,6 +100,18 @@ zstyle ':completion:*:kill:*:processes' command "ps x"
 ###############################################################################
 # Key bindings
 # Ctrl+v then type the key to see the code
+#
+# . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+#
+# This all depends on your termcapinfo
+# These are correct if your on Arch Linux
+# If you use urxvt, and you should, make sure to install:
+# pacman -S urxvt-unicode-terminfo
+#
+# Debian dose not have any termcaps installed by default:
+# apt-get install ncurses-term
+#
+# . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
 #
 typeset -g -A key
 #
@@ -159,11 +168,11 @@ elif [[ $TERM == "linux" ]] ;then
 #
 # xterm-256color
 #
-elif [[ $TERM == "xterm-256color" ]] ;then
+elif [[ $TERM == "xterm-256color" || $TERM == "xterm" ]] ;then
   # home ^[[H end ^[[F insert ^[[2~ delete ^[[3~ backspace ^?
   # pgup ^[[5~ pgdown ^[[6~ left ^[[D right ^[[C up ^[[A down ^[[B
-  bindkey '^[[H~' beginning-of-line
-  bindkey '^[[F~' end-of-line
+  bindkey '^[[H' beginning-of-line
+  bindkey '^[[F' end-of-line
   bindkey '^[[2~' overwrite-mode
   bindkey '^[[3~' delete-char
   bindkey '^?' backward-delete-char
@@ -174,20 +183,38 @@ elif [[ $TERM == "xterm-256color" ]] ;then
   bindkey '^[[A' up-line-or-search
   bindkey '^[[B' down-line-or-search
 #
-# Catch-All
+# Default
 #
 else
   # home ^[[1~ end ^[[4~ home ^[[7~ end ^[[8~ home ^[[H end ^[[F insert
   # ^[[2~ delete ^[[3~ backspace ^?
   # pgup ^[[5~ pgdown ^[[6~ left ^[[D right ^[[C up ^[[A down ^[[B
+  #
+  # screen-256color
   #bindkey '^[[1~' beginning-of-line
   #bindkey '^[[4~' end-of-line
+  #bindkey '^[[2~' overwrite-mode
+  #bindkey '^[[3~' delete-char
+  #
+  # urxvt-256color
   #bindkey '^[[7~' beginning-of-line
   #bindkey '^[[8~' end-of-line
-  bindkey '^[[H~' beginning-of-line
-  bindkey '^[[F~' end-of-line
+  #bindkey '^[[2~' overwrite-mode
+  #bindkey '^[[3~' delete-char
+  #
+  # linux
+  #bindkey '^[[1~' beginning-of-line
+  #bindkey '^[[4~' end-of-line
+  #bindkey '^[[2~' overwrite-mode
+  #bindkey '^[[3~' delete-char
+  #
+  # xterm
+  bindkey '^[[H' beginning-of-line
+  bindkey '^[[F' end-of-line
   bindkey '^[[2~' overwrite-mode
   bindkey '^[[3~' delete-char
+  #
+  # Common
   bindkey '^?' backward-delete-char
   bindkey '^[[5~' up-line-or-history
   bindkey '^[[6~' down-line-or-history
@@ -198,12 +225,10 @@ else
 fi
 
 ###############################################################################
-#_TTY=`echo $TTY | cut -d '/' -f 3`
-#if [[ $_TTY = 'pts' ]]; then
-#  eval `dircolors /usr/src/dircolors/dircolors-solarized/dircolors.256dark`
-#else
-#  eval `dircolors /usr/src/dircolors/dircolors-solarized/dircolors.ansi-dark`
-#fi
+#
+# Set GNU dircolors which match jellybeans.vim when used with the
+# jellybeans.ansi Xresorces colors
+#
 eval `dircolors /usr/src/dircolors/dircolors-jellybeans/dircolors.ansi`
 #------------------------------------------------------------------------------
 # source-highlight : Convert source code to syntax highlighted document
@@ -219,9 +244,10 @@ fi
 alias grep='grep --color'
 alias sl='ls --color=auto'
 alias ls='ls --color=auto'
-alias l='ls -lhF'
-alias la='ls -lhFa'
+alias l='ls -lh'
+alias la='ls -lha'
 alias e='exit'
+alias c='clear'
 alias wanip='curl --get http://tnx.nl/ip'
 alias suod='sudo'
 alias soud='sudo'
