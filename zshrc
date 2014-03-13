@@ -229,7 +229,7 @@ fi
 # Set GNU dircolors which match jellybeans.vim when used with the
 # jellybeans.ansi Xresorces colors
 #
-eval `dircolors /usr/src/dircolors/dircolors-jellybeans/dircolors.ansi`
+eval `dircolors /usr/src/dircolors/dircolors.ansi`
 #------------------------------------------------------------------------------
 # source-highlight : Convert source code to syntax highlighted document
 # http://www.gnu.org/software/src-highlite/source-highlight.html
@@ -239,6 +239,10 @@ if [[ -x ${LESS_HILITE} ]] ;then
   export LESSOPEN="| ${LESS_HILITE} %s" 
   export LESS=' -R '
 fi
+#
+# less colors support regargless of src-hilie-lesspiple
+export LESS="--RAW-CONTROL-CHARS"
+#
 ###############################################################################
 #
 alias grep='grep --color'
@@ -255,5 +259,66 @@ alias sodu='sudo'
 alias sdou='sudo'
 alias sduo='sudo'
 alias ip6='ip -6'
+
+
+###############################################################################
+#
+# Functions
+
+# Table of colors and their escapes
+colortable() {
+  local fgc bgc vals seq0
+
+  printf "Color escapes are %s\n" '\e[${value};...;${value}m'
+  printf "Values 30..37 are \e[33mforeground colors\e[m\n"
+  printf "Values 40..47 are \e[43mbackground colors\e[m\n"
+  printf "Value  1 gives a  \e[1mbold-faced look\e[m\n\n"
+
+  # foreground colors
+  for fgc in {30..37}; do
+    # background colors
+    for bgc in {40..47}; do
+      fgc=${fgc#37} # white
+      bgc=${bgc#40} # black
+
+      vals="${fgc:+$fgc;}${bgc}"
+      vals=${vals%%;}
+
+      seq0="${vals:+\e[${vals}m}"
+      printf "  %-9s" "${seq0:-(default)}"
+      printf " ${seq0}TEXT\e[m"
+      printf " \e[${vals:+${vals+$vals;}}1mBOLD\e[m"
+    done
+    echo; echo
+  done
+}
+
+rsshell() {
+  # If no selection given, display numbered list, else display news
+  if [[ -z ${1} ]] ;then
+      nl $HOME/.rss
+  else
+    echo -e "$(echo $(curl --silent $(nl $HOME/.rss |grep ${1} |sed  -e 's/2\t//' -e 's/ //g') | sed -e ':a;N;$!ba;s/\n/ /g') | \
+      sed -e 's/&amp;/\&/g
+      s/&lt;\|&#60;/</g
+      s/&gt;\|&#62;/>/g
+      s/<\/a>/£/g
+      s/href\=\"/§/g
+      s/<title>/\\n\\n\\n   :: \\e[01;31m/g; s/<\/title>/\\e[00m ::\\n/g
+      s/<link>/ [ \\e[01;36m/g; s/<\/link>/\\e[00m ]/g
+      s/<description>/\\n\\n\\e[00;37m/g; s/<\/description>/\\e[00m\\n\\n/g
+      s/<p\( [^>]*\)\?>\|<br\s*\/\?>/\n/g
+      s/<b\( [^>]*\)\?>\|<strong\( [^>]*\)\?>/\\e[01;30m/g; s/<\/b>\|<\/strong>/\\e[00;37m/g
+      s/<i\( [^>]*\)\?>\|<em\( [^>]*\)\?>/\\e[41;37m/g; s/<\/i>\|<\/em>/\\e[00;37m/g
+      s/<u\( [^>]*\)\?>/\\e[4;37m/g; s/<\/u>/\\e[00;37m/g
+      s/<code\( [^>]*\)\?>/\\e[00m/g; s/<\/code>/\\e[00;37m/g
+      s/<a[^§|t]*§\([^\"]*\)\"[^>]*>\([^£]*\)[^£]*£/\\e[01;31m\2\\e[00;37m \\e[01;34m[\\e[00;37m \\e[04m\1\\e[00;37m\\e[01;34m ]\\e[00;37m/g
+      s/<li\( [^>]*\)\?>/\n \\e[01;34m*\\e[00;37m /g
+      s/<!\[CDATA\[\|\]\]>//g
+      s/\|>\s*<//g
+      s/ *<[^>]\+> */ /g
+      s/[<>£§]//g')\n\n" |less ;
+  fi
+}
 
 #  vim: set ts=2 sw=2 tw=80 et :
